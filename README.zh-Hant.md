@@ -12,14 +12,14 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.0
+  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.1
     with:
       root: src
 ```
 
 | 工具 | 問的問題 | 版本 |
 |---|---|---|
-| [XamlContrast](https://github.com/HSU-YU-MING/cornhsu-xamlcontrast) | 看不看得清楚（顏色對比） | 1.11.0 |
+| [XamlContrast](https://github.com/HSU-YU-MING/cornhsu-xamlcontrast) | 看不看得清楚（顏色對比） | 1.11.1 |
 | [XamlKeys](https://github.com/HSU-YU-MING/cornhsu-xamlkeys) | 找不找得到（資源鍵） | 0.4.1 |
 | [XamlFit](https://github.com/HSU-YU-MING/cornhsu-xamlfit) | 裝不裝得下（翻譯的字） | 0.13.1 |
 | [XamlA11y](https://github.com/HSU-YU-MING/cornhsu-xamla11y) | 按不按得到、念不念得出來 | 0.1.0 |
@@ -32,7 +32,7 @@ steps:
 第一次跑，每一支都會有東西要報。各記一份 baseline 放進 repo，之後只擋新增的：
 
 ```bash
-dotnet tool install -g Cornhsu.XamlContrast --version 1.11.0 && xamlcontrast src --write-baseline contrast-baseline.json
+dotnet tool install -g Cornhsu.XamlContrast --version 1.11.1 && xamlcontrast src --write-baseline contrast-baseline.json
 dotnet tool install -g Cornhsu.XamlKeys --version 0.4.1      && xamlkeys src --write-baseline keys-baseline.json
 dotnet tool install -g Cornhsu.XamlA11y --version 0.1.0      && xamla11y audit src --write-baseline a11y-baseline.json
 ```

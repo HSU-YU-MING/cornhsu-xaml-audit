@@ -12,14 +12,14 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.0
+  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.1
     with:
       root: src
 ```
 
 | Tool | Asks | Version |
 |---|---|---|
-| [XamlContrast](https://github.com/HSU-YU-MING/cornhsu-xamlcontrast) | can you **see** it (color contrast) | 1.11.0 |
+| [XamlContrast](https://github.com/HSU-YU-MING/cornhsu-xamlcontrast) | can you **see** it (color contrast) | 1.11.1 |
 | [XamlKeys](https://github.com/HSU-YU-MING/cornhsu-xamlkeys) | can it be **found** (resource keys) | 0.4.1 |
 | [XamlFit](https://github.com/HSU-YU-MING/cornhsu-xamlfit) | does it **fit** (translated text) | 0.13.1 |
 | [XamlA11y](https://github.com/HSU-YU-MING/cornhsu-xamla11y) | can you **reach** it (keyboard, screen reader) | 0.1.0 |
@@ -33,7 +33,7 @@ runs even when an earlier one failed. The job fails at the end when any of them 
 Every tool has problems to report on its first run. Write a baseline for each, commit the files, and only new problems fail:
 
 ```bash
-dotnet tool install -g Cornhsu.XamlContrast --version 1.11.0 && xamlcontrast src --write-baseline contrast-baseline.json
+dotnet tool install -g Cornhsu.XamlContrast --version 1.11.1 && xamlcontrast src --write-baseline contrast-baseline.json
 dotnet tool install -g Cornhsu.XamlKeys --version 0.4.1      && xamlkeys src --write-baseline keys-baseline.json
 dotnet tool install -g Cornhsu.XamlA11y --version 0.1.0      && xamla11y audit src --write-baseline a11y-baseline.json
 ```

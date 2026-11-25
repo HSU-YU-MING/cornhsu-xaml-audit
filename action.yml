@@ -109,9 +109,9 @@ runs:
       id: contrast
       if: ${{ !cancelled() && steps.plan.outputs.contrast == 'true' }}
       continue-on-error: true
-      uses: HSU-YU-MING/cornhsu-xamlcontrast@da50a170297aebb70b97d9f59bce75a1879726e0 # v1.11.0
+      uses: HSU-YU-MING/cornhsu-xamlcontrast@62610131d08035531f00a4bdeb0ccaebd46d08bf # v1.11.1
       with:
-        version: 1.11.0
+        version: 1.11.1
         root: ${{ inputs.root }}
         working-directory: ${{ inputs.working-directory }}
         fail-on: ${{ inputs.fail-on }}
