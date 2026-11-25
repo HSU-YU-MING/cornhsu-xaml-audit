@@ -72,7 +72,7 @@ dotnet tool install -g Cornhsu.XamlA11y --version 0.1.0      && xamla11y audit s
 
 會擋的情況：有一支找到問題、有一支看得太少不能信（它的退出碼 3）、有一支沒跑完、一支都沒跑。留言的表會寫是哪一支。
 
-只要用其中一支、或想自己選版本：直接用[各自的 Action](https://github.com/HSU-YU-MING/cornhsu-xamla11y/blob/main/docs/four-tools.md)。
+只要用其中一支、或想自己選版本：直接用各自的 Action（上面的表有連結）。
 原本四個 Action 都有接的，換過來之後那四則舊留言不會再更新；workflow 與 job 名稱沒變的話，code scanning 的警示照舊。
 
 ## 授權

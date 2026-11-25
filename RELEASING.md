@@ -6,5 +6,4 @@
    改 `action.yml`、兩份 README、CHANGELOG，並準備下一個版號；這一版還沒推 tag 就再換一支，會併進同一版。
    Dependabot 開的 PR 只改 `uses`，`verify-pins.sh` 會擋：關掉它、改跑腳本。
 2. 那一支的 CHANGELOG 看一遍，把使用者會看到的改變寫進這裡的 CHANGELOG；判定變了就寫 **Upgrading**。
-3. XamlA11y 的 repo：`bash scripts/bump-tool.sh XamlContrast 1.12.0` 與 `bash scripts/bump-tool.sh xaml-audit <這一版>`（這裡的 tag 推了再合併）。
-4. CI 綠了、合併之後：`git tag v0.1.0`、`git push origin v0.1.0`。
+3. CI 綠了、合併之後：`git tag v0.1.0`、`git push origin v0.1.0`。
