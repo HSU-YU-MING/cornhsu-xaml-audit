@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# plan.sh 與 report.sh 的測試：不用網路、不用裝工具。bash tests/run.sh
+# plan.sh、report.sh 與 bump.sh 的測試：不用網路、不用裝工具。bash tests/run.sh
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
@@ -109,6 +109,48 @@ for t in xamlcontrast xamlkeys xamlfit xamla11y; do { printf '## t\n\nFAIL\n\n';
 report XU_CONTRAST=failure XU_KEYS=failure XU_FIT=failure XU_A11Y=failure > /dev/null
 size=$(wc -c < "$RUNNER_TEMP/xaml-audit.md")
 ok 'four long ones fit in a comment' yes "$([ "$size" -lt 65000 ] && echo yes || echo "$size")"
+
+# bump：在複製品裡跑，不連網路
+bumped() { # 有沒有 tag 的版本
+  rm -rf "$tmp/b"; mkdir -p "$tmp/b"
+  cp -r "$here/action.yml" "$here/README.md" "$here/README.zh-Hant.md" "$here/CHANGELOG.md" "$here/scripts" "$tmp/b/"
+  latest=$(sed -nE 's/^## \[([0-9.]+)\].*/\1/p' "$tmp/b/CHANGELOG.md" | head -n 1)
+  ( cd "$tmp/b" && git init -q . && git config user.email t@t && git config user.name t && git config core.autocrlf false && git add -A && git commit -qm x )
+  [ "${1:-}" = untagged ] || git -C "$tmp/b" tag "v$latest"
+}
+bump() { ( cd "$tmp/b" && BUMP_SHA=$(printf 'a%.0s' {1..40}) bash scripts/bump.sh "$@" > "$tmp/blog" 2>&1 ); echo $?; }
+top() { sed -nE 's/^## \[([0-9.]+)\] - (.*)/\1/p' "$tmp/b/CHANGELOG.md" | head -n "${1:-1}" | tr '\n' ' '; }
+files() { git -C "$tmp/b" diff --name-only | tr '\n' ' '; }
+for t in XamlContrast XamlKeys XamlFit XamlA11y; do
+  bumped
+  ok "bump $t" 0 "$(bump "$t" 77.1.2)"
+  has "bump $t: verify-pins is content" ok "$(cat "$tmp/blog")"
+  ok "bump $t: every file" 'CHANGELOG.md README.md README.zh-Hant.md action.yml ' "$(files)"
+  ok "bump $t: only its own pin" 4 "$(git -C "$tmp/b" diff -U0 -- action.yml | grep -cE '^[-+] ')"
+  has "bump $t: the CHANGELOG says so" "- [$t 77.1.2](https://github.com/HSU-YU-MING/cornhsu-$(tr 'A-Z' 'a-z' <<< "$t")/releases/tag/v77.1.2)." "$(head -n 12 "$tmp/b/CHANGELOG.md")"
+  ok "bump $t: no old example left" 0 "$(grep -c "xaml-audit@v$latest" "$tmp/b/README.md")"
+done
+bumped
+IFS=. read -r a b c <<< "$latest"
+bump XamlKeys 77.1.2 > /dev/null
+ok 'the next patch' "$a.$b.$((c + 1)) $latest " "$(top 2)"
+ok 'a second one joins the version that is not out yet' 0 "$(bump XamlFit 77.3.4)"
+ok 'and does not bump again' "$a.$b.$((c + 1)) $latest " "$(top 2)"
+ok 'both are listed, next to each other' 2 "$(sed -n '/^## /,/^## /p' "$tmp/b/CHANGELOG.md" | sed -n '3,4p' | grep -c '77\.')"
+bumped; bump XamlKeys 77.1.2 --minor > /dev/null
+ok 'the next minor' "$a.$((b + 1)).0 $latest " "$(top 2)"
+bumped untagged; bump XamlKeys 77.1.2 > /dev/null
+ok 'the version at the top is not out yet' "$latest" "$(top | tr -d ' ')"
+for bad in '' 'XamlKeys' 'xamlkeys 1.0.0' 'XamlAudit 1.0.0' 'XamlKeys v1.0.0' 'XamlKeys 1.0' 'XamlKeys 1.0.0 --major' 'XamlKeys 1.0.0 --minor x'; do
+  bumped
+  # shellcheck disable=SC2086
+  ok "refused: bump $bad" 2 "$(bump $bad)"
+  ok "nothing changed: bump $bad" '' "$(files)"
+done
+bumped
+now=$(sed -nE 's/.*cornhsu-xamlkeys@[0-9a-f]+ # v([0-9.]+).*/\1/p' "$tmp/b/action.yml")
+ok 'already there' 1 "$(bump XamlKeys "$now")"
+ok 'already there: nothing changed' '' "$(files)"
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# action.yml 的每一支：釘的 commit 旁邊的 tag、傳給它的 version、兩份 README 的表，三個要一樣。
+# action.yml 的每一支：釘的 commit 旁邊的 tag、傳給它的 version、兩份 README 的表與安裝指令，都要一樣。
 # Dependabot 只會改 uses 那一行，version 沒跟著改就會用新的 Action 跑舊的工具。
 # --online：再去 GitHub 看那個 tag 是不是真的指到那個 commit（CI 用）。
 set -eu
@@ -16,6 +16,10 @@ for t in XamlContrast XamlKeys XamlFit XamlA11y; do
   [ "v$ver" = "$tag" ] || no "$t: the action is $tag, version is ${ver:-missing}"
   for f in README.md README.zh-Hant.md; do
     grep -qE "^\| \[$t\]\(.*\| $ver \|" "$f" || no "$f does not say $t $ver"
+    # 寫 baseline 的安裝指令（XamlFit 沒有）
+    for v in $(sed -nE "s/.*Cornhsu\.$t --version ([0-9.]+).*/\1/p" "$f"); do
+      [ "$v" = "$ver" ] || no "$f installs $t $v, action.yml runs $ver"
+    done
   done
   if [ "${1:-}" = --online ]; then
     real=$(gh api "repos/HSU-YU-MING/cornhsu-$low/commits/$tag" -q .sha)
