@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # 只更新釘選的 SHA。四支的 uses 改了，version 與 README 要自己跟著改（verify-pins.sh 會擋）
+  - package-ecosystem: "github-actions"
+    directories: ["/", "/.github/workflows"]
+    schedule:
+      interval: "monthly"

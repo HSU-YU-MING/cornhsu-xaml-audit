@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash tests/run.sh
+      - name: The pins agree with each other and with the tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/verify-pins.sh --online
+
+  # 真的跑一次：四支都從 nuget.org 裝、用釘住的 Action。
+  action:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # comment 用預設的 true：這個 workflow 只有 contents: read，PR 上留言會 403，不該紅在那一步
+      - name: One problem for each tool (expects the gate to fail)
+        id: suite
+        continue-on-error: true
+        uses: ./
+        with:
+          root: samples/suite
+          fit-resx: samples/suite/Resources
+          share-stats: 'false'
+          artifact-prefix: suite-${{ matrix.os }}
+      - name: All four ran and each found its own
+        env:
+          OUTCOME: ${{ steps.suite.outcome }}
+        run: |
+          test "$OUTCOME" = failure || { echo "expected the gate to fail, got $OUTCOME"; exit 1; }
+          cat "$RUNNER_TEMP/xaml-audit.md"
+          for t in XamlContrast XamlKeys XamlFit XamlA11y; do
+            grep -qE "^\| $t \| .*\*\*FAIL\*\*.*\*\*1 fail\*\*" "$RUNNER_TEMP/xaml-audit.md" || { echo "$t did not report its problem"; exit 1; }
+            low=$(tr 'A-Z' 'a-z' <<< "$t")
+            test "$(jq '.findings | length' "$RUNNER_TEMP/$low-report.json" | tr -d '\r')" -ge 1 || { echo "no finding in the report of $t"; exit 1; }
+          done
+
+      - name: A project with nothing wrong passes, and XamlFit is said to be left out
+        uses: ./
+        with:
+          root: samples/clean
+          share-stats: 'false'
+          artifact-prefix: clean-${{ matrix.os }}
+      - run: |
+          cat "$RUNNER_TEMP/xaml-audit.md"
+          grep -qF '| XamlFit | not run: no font metrics' "$RUNNER_TEMP/xaml-audit.md"
+          test "$(grep -c 'PASS' "$RUNNER_TEMP/xaml-audit.md")" -ge 3
+
+      - name: Only the ones asked for
+        id: some
+        continue-on-error: true
+        uses: ./
+        with:
+          root: samples/suite
+          tools: keys, a11y
+          upload-report: 'false'
+      - env:
+          OUTCOME: ${{ steps.some.outcome }}
+        run: |
+          test "$OUTCOME" = failure
+          grep -qF '| XamlContrast | not run |' "$RUNNER_TEMP/xaml-audit.md"
+          grep -qF '| XamlFit | not run |' "$RUNNER_TEMP/xaml-audit.md"
+
+      # 四支裡只有一支會紅，也要擋；而且紅的那支後面的照跑
+      - name: One failing tool is enough
+        id: one
+        continue-on-error: true
+        uses: ./
+        with:
+          root: samples/clean
+          tools: fit, a11y
+          upload-report: 'false'
+      - env:
+          OUTCOME: ${{ steps.one.outcome }}
+        run: |
+          test "$OUTCOME" = failure
+          grep -qE '^\| XamlA11y \| .*PASS' "$RUNNER_TEMP/xaml-audit.md"
+
+      - name: A bad input is refused
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          root: samples/clean
+          tools: everything
+      - env:
+          OUTCOME: ${{ steps.bad.outcome }}
+        run: test "$OUTCOME" = failure

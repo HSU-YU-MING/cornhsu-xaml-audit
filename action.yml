@@ -1,0 +1,221 @@
+name: 'Cornhsu XAML audit'
+description: 'Four static checks for WPF XAML in one step: contrast, resource keys, translated text that does not fit, and accessibility. One PR comment, nothing is launched.'
+author: 'Cornhsu'
+
+branding:
+  icon: 'check-square'
+  color: 'blue'
+
+# 依序叫 XamlContrast、XamlKeys、XamlFit、XamlA11y 自己的 Action，自己不做檢查。
+#   - 每一支的 Action（commit SHA）與工具版本（version）一起釘：scripts/verify-pins.sh 守著兩邊一樣。
+#     使用者釘這個 repo 的一個 tag，就等於釘住四支。
+#   - 行內註記、SARIF、artifact 各支自己出；PR 留言關掉，這裡合成一則。
+#   - 一支紅了其他照跑（continue-on-error），最後一步才擋。
+
+inputs:
+  root:
+    description: 'Folder to scan (the one containing your XAML); default: the repository root'
+    required: false
+    default: '.'
+  working-directory:
+    description: 'Directory to run in (`root` and the other paths are resolved relative to it)'
+    required: false
+    default: '.'
+  tools:
+    description: 'auto: all four, XamlFit only when there are font metrics to measure with (the report says when it was left out). Or a list, such as "contrast, keys, a11y"'
+    required: false
+    default: 'auto'
+  fail-on:
+    description: 'fail or warn, for all the tools. Omit for the config files and each tool''s own default (XamlContrast: warn, the others: fail)'
+    required: false
+    default: ''
+  contrast-baseline:
+    description: 'Baseline file of XamlContrast'
+    required: false
+    default: ''
+  keys-baseline:
+    description: 'Baseline file of XamlKeys'
+    required: false
+    default: ''
+  fit-baseline:
+    description: 'Baseline file of XamlFit'
+    required: false
+    default: ''
+  a11y-baseline:
+    description: 'Baseline file of XamlA11y'
+    required: false
+    default: ''
+  fit-resx:
+    description: 'XamlFit: folder of the .resx files (default: its config file)'
+    required: false
+    default: ''
+  fit-metrics:
+    description: 'XamlFit: font metrics file (default: its config file, else the file in root)'
+    required: false
+    default: ''
+  fit-export-fonts:
+    description: 'XamlFit, Windows runners only: font families to measure with, such as "Segoe UI, Microsoft JhengHei UI", instead of a committed metrics file'
+    required: false
+    default: ''
+  comment:
+    description: 'Post/update one PR comment with the four reports. Requires `permissions: pull-requests: write`; without it the comment is skipped and the gate still works'
+    required: false
+    default: 'true'
+  upload-report:
+    description: 'Upload each tool''s reports as an artifact (xamlcontrast-report, xamlkeys-report, xamlfit-report, xamla11y-report)'
+    required: false
+    default: 'true'
+  sarif:
+    description: 'Upload SARIF to GitHub code scanning (requires security-events: write, plus GitHub Advanced Security or a public repo)'
+    required: false
+    default: 'false'
+  share-stats:
+    description: 'XamlContrast sends one anonymous usage statistics request per audit (https://stats.cornhsu.com/). false: nothing is sent. The other three send nothing'
+    required: false
+    default: 'true'
+  artifact-prefix:
+    description: 'Put in front of the artifact names, and keeps a separate PR comment. Needed when the action runs more than once in a workflow run (a matrix, or two calls)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    # ⚠ input 一律經由 env 進 shell，不要寫成 run: 裡的 ${{ inputs.x }}（呼叫端的值可能來自 PR 作者，會變成指令）
+    - name: Decide what to run
+      id: plan
+      shell: bash
+      env:
+        XU_ACTION: ${{ github.action_path }}
+        XU_ROOT: ${{ inputs.root }}
+        XU_WORKDIR: ${{ inputs.working-directory }}
+        XU_TOOLS: ${{ inputs.tools }}
+        XU_FAIL_ON: ${{ inputs.fail-on }}
+        XU_CONTRAST_BASELINE: ${{ inputs.contrast-baseline }}
+        XU_KEYS_BASELINE: ${{ inputs.keys-baseline }}
+        XU_FIT_BASELINE: ${{ inputs.fit-baseline }}
+        XU_A11Y_BASELINE: ${{ inputs.a11y-baseline }}
+        XU_FIT_RESX: ${{ inputs.fit-resx }}
+        XU_FIT_METRICS: ${{ inputs.fit-metrics }}
+        XU_FIT_EXPORT_FONTS: ${{ inputs.fit-export-fonts }}
+        XU_COMMENT: ${{ inputs.comment }}
+        XU_UPLOAD_REPORT: ${{ inputs.upload-report }}
+        XU_SARIF: ${{ inputs.sarif }}
+        XU_SHARE_STATS: ${{ inputs.share-stats }}
+        XU_PREFIX: ${{ inputs.artifact-prefix }}
+      run: bash "$XU_ACTION/scripts/plan.sh"
+
+    - name: XamlContrast
+      id: contrast
+      if: ${{ !cancelled() && steps.plan.outputs.contrast == 'true' }}
+      continue-on-error: true
+      uses: HSU-YU-MING/cornhsu-xamlcontrast@da50a170297aebb70b97d9f59bce75a1879726e0 # v1.11.0
+      with:
+        version: 1.11.0
+        root: ${{ inputs.root }}
+        working-directory: ${{ inputs.working-directory }}
+        fail-on: ${{ inputs.fail-on }}
+        baseline: ${{ inputs.contrast-baseline }}
+        comment: 'false'
+        upload-report: ${{ inputs.upload-report }}
+        sarif: ${{ inputs.sarif }}
+        share-stats: ${{ inputs.share-stats }}
+        artifact-name: ${{ inputs.artifact-prefix != '' && format('{0}-xamlcontrast-report', inputs.artifact-prefix) || 'xamlcontrast-report' }}
+
+    - name: XamlKeys
+      id: keys
+      if: ${{ !cancelled() && steps.plan.outputs.keys == 'true' }}
+      continue-on-error: true
+      uses: HSU-YU-MING/cornhsu-xamlkeys@c104ec51b62e004934b45dfd3b8102564e38e0b9 # v0.4.1
+      with:
+        version: 0.4.1
+        root: ${{ inputs.root }}
+        working-directory: ${{ inputs.working-directory }}
+        fail-on: ${{ inputs.fail-on }}
+        baseline: ${{ inputs.keys-baseline }}
+        comment: 'false'
+        upload-report: ${{ inputs.upload-report }}
+        sarif: ${{ inputs.sarif }}
+        artifact-name: ${{ inputs.artifact-prefix != '' && format('{0}-xamlkeys-report', inputs.artifact-prefix) || 'xamlkeys-report' }}
+
+    - name: XamlFit
+      id: fit
+      if: ${{ !cancelled() && steps.plan.outputs.fit == 'true' }}
+      continue-on-error: true
+      uses: HSU-YU-MING/cornhsu-xamlfit@f3cd443dd130a4b6bb1a6177f7ee7e9f08430799 # v0.13.1
+      with:
+        version: 0.13.1
+        root: ${{ inputs.root }}
+        working-directory: ${{ inputs.working-directory }}
+        fail-on: ${{ inputs.fail-on }}
+        baseline: ${{ inputs.fit-baseline }}
+        resx: ${{ inputs.fit-resx }}
+        metrics: ${{ inputs.fit-metrics }}
+        export-fonts: ${{ inputs.fit-export-fonts }}
+        comment: 'false'
+        upload-report: ${{ inputs.upload-report }}
+        sarif: ${{ inputs.sarif }}
+        artifact-name: ${{ inputs.artifact-prefix != '' && format('{0}-xamlfit-report', inputs.artifact-prefix) || 'xamlfit-report' }}
+
+    - name: XamlA11y
+      id: a11y
+      if: ${{ !cancelled() && steps.plan.outputs.a11y == 'true' }}
+      continue-on-error: true
+      uses: HSU-YU-MING/cornhsu-xamla11y@4251c0236f2569378ad3f5796c6f3a730bb01569 # v0.1.0
+      with:
+        version: 0.1.0
+        root: ${{ inputs.root }}
+        working-directory: ${{ inputs.working-directory }}
+        fail-on: ${{ inputs.fail-on }}
+        baseline: ${{ inputs.a11y-baseline }}
+        comment: 'false'
+        upload-report: ${{ inputs.upload-report }}
+        sarif: ${{ inputs.sarif }}
+        artifact-name: ${{ inputs.artifact-prefix != '' && format('{0}-xamla11y-report', inputs.artifact-prefix) || 'xamla11y-report' }}
+
+    - name: Put the reports together
+      id: report
+      if: ${{ !cancelled() && steps.plan.outcome == 'success' }}
+      shell: bash
+      env:
+        XU_ACTION: ${{ github.action_path }}
+        XU_CONTRAST: ${{ steps.contrast.outcome }}
+        XU_KEYS: ${{ steps.keys.outcome }}
+        XU_FIT: ${{ steps.fit.outcome }}
+        XU_A11Y: ${{ steps.a11y.outcome }}
+        XU_FIT_NOTE: ${{ steps.plan.outputs.fit-note }}
+      run: |
+        set +e
+        bash "$XU_ACTION/scripts/report.sh"
+        echo "exit=$?" >> "$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/xaml-audit.md" >> "$GITHUB_STEP_SUMMARY"
+
+    # 同一則反覆更新，不洗版。fork 的 PR 的 token 唯讀，貼留言會 403：預期的，gate 在最後一步照常擋
+    - name: Comment on the PR
+      if: ${{ !cancelled() && steps.report.outcome == 'success' && github.event_name == 'pull_request' && inputs.comment == 'true' }}
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        XU_PR: ${{ github.event.pull_request.number }}
+        XU_PREFIX: ${{ inputs.artifact-prefix }}
+      run: |
+        # prefix 已在第一步限定成 [A-Za-z0-9._-]，拼進 jq 字串是安全的
+        marker="<!-- ${XU_PREFIX:+$XU_PREFIX-}xaml-audit -->"
+        { echo "$marker"; cat "$RUNNER_TEMP/xaml-audit.md"; } > "$RUNNER_TEMP/xaml-audit-comment.md"
+        # 只認 github-actions[bot] 自己的留言：任何人都能搶先貼一則以標記開頭的
+        ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$XU_PR/comments" \
+          --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")
+        existing=${ids%%$'\n'*}
+        if [ -n "$existing" ]; then
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@"$RUNNER_TEMP/xaml-audit-comment.md" >/dev/null
+        else
+          gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$XU_PR/comments" -F body=@"$RUNNER_TEMP/xaml-audit-comment.md" >/dev/null
+        fi
+
+    - name: Enforce the gate
+      if: ${{ !cancelled() && steps.report.outcome == 'success' }}
+      shell: bash
+      env:
+        XU_EXIT: ${{ steps.report.outputs.exit }}
+      run: exit "$XU_EXIT"
