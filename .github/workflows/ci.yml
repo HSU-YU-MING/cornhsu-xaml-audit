@@ -112,3 +112,30 @@ jobs:
       - env:
           OUTCOME: ${{ steps.bad.outcome }}
         run: test "$OUTCOME" = failure
+
+  # 真的在 PR 上留言：同一則更新兩次（不洗版）。fork 的 PR 沒有寫入權限，不跑
+  comment:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: first
+        continue-on-error: true
+        uses: ./
+        with: { root: samples/suite, fit-resx: samples/suite/Resources, share-stats: 'false', artifact-prefix: comment }
+      - name: Same comment, updated
+        uses: ./
+        with: { root: samples/clean, upload-report: 'false', share-stats: 'false', artifact-prefix: comment }
+      - name: Exactly one comment, and it is the second report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- comment-xaml-audit -->"))) | .body' > bodies.txt
+          test "$(grep -c '^<!-- comment-xaml-audit -->' bodies.txt)" -eq 1
+          grep -qF '| XamlFit | not run: no font metrics' bodies.txt
+          grep -qE '^\| XamlA11y \| .*PASS' bodies.txt
