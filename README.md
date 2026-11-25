@@ -11,7 +11,7 @@ permissions:
   # security-events: write  # only for sarif: true
 
 steps:
-  - uses: actions/checkout@v4
+  - uses: actions/checkout@v7
   - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.0
     with:
       root: src
