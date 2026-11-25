@@ -2,6 +2,10 @@
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-11-25
+
+A shorter description, so the action can be listed in the GitHub Marketplace. It runs the same tools as 0.1.1.
+
 ## [0.1.1] - 2026-11-25
 
 XamlContrast 1.11.1: with a baseline, its row in the comment counts what is new instead of saying `PASS · 1 fail`.

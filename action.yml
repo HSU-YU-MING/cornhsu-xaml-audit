@@ -1,5 +1,5 @@
 name: 'Cornhsu XAML audit'
-description: 'Four static checks for WPF XAML in one step: contrast, resource keys, translated text that does not fit, and accessibility. One PR comment, nothing is launched.'
+description: 'Four static checks for WPF XAML in one step: contrast, resource keys, translated text and accessibility. One PR comment.'
 author: 'Cornhsu'
 
 branding:

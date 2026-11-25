@@ -27,6 +27,9 @@ for t in XamlContrast XamlKeys XamlFit XamlA11y; do
   fi
   echo "$t $tag ${sha:0:8}"
 done
+# GitHub 市集：說明要少於 125 個字（字元），太長就不能上架，而且要到按發佈那一頁才看得到
+desc=$(sed -nE "s/^description: '(.*)'[[:space:]]*\$/\1/p" action.yml)
+[ -n "$desc" ] && [ "${#desc}" -lt 125 ] || no "the description in action.yml is ${#desc} characters, the Marketplace takes fewer than 125"
 # README 的範例釘的是 CHANGELOG 最新的版本
 latest=$(sed -nE 's/^## \[([0-9]+\.[0-9]+\.[0-9]+)\].*/\1/p' CHANGELOG.md | head -n 1)
 for f in README.md README.zh-Hant.md; do
