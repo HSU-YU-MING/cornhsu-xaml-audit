@@ -72,4 +72,4 @@ echo
 echo "$tool $old -> $ver; this action: v$next"
 echo "read https://github.com/$repo/releases/tag/v$ver and say in CHANGELOG.md what changes for the user"
 [ -n "$minor" ] || echo "if it finds different things now (Upgrading), this is a minor version: git checkout . and run again with --minor"
-echo "then: branch, PR, merge, git tag v$next, and XamlA11y: bash scripts/bump-tool.sh $tool $ver; bash scripts/bump-tool.sh xaml-audit $next"
+echo "then: branch, PR, merge, git tag v$next"

@@ -74,8 +74,8 @@ Everything else is set in each tool's own config file, side by side in `root`: `
 The job fails when a tool found problems, when one saw too little to be trusted (its exit code 3), when one stopped
 before its report, and when none ran. The table in the comment says which.
 
-Using one tool alone, or different versions of them: call [their actions](https://github.com/HSU-YU-MING/cornhsu-xamla11y/blob/main/docs/four-tools.md)
-directly. Moving from four actions to this one: the four old PR comments are not updated any more; code scanning alerts carry on if the workflow and job keep their names.
+Using one tool alone, or different versions of them: call their own actions
+(linked in the table above) directly. Moving from four actions to this one: the four old PR comments are not updated any more; code scanning alerts carry on if the workflow and job keep their names.
 
 ## License
 
