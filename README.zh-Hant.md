@@ -12,7 +12,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.1
+  - uses: HSU-YU-MING/cornhsu-xaml-audit@v0.1.2
     with:
       root: src
 ```
